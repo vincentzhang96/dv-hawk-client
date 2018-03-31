@@ -14,16 +14,19 @@
 </template>
 
 <script>
+import StrHelper from "@/api/StrHelper";
+import ChatHelper from "@/api/ChatHelper";
+
 export default {
     name: 'packet-parse',
     props: ["packet"],
     computed: {
         packetData() {
-            let dv = new DataView(this.packet.data);
+            let dv = this.packet.datav;
 
             let type = dv.getUint8(0);
             
-            let ret = this.parse(new DataView(this.packet.data.slice(1)), type);
+            let ret = this.parse(this.packet, new DataView(this.packet.data.slice(1)), type);
             
             let common = {
                 type: type,
@@ -42,7 +45,7 @@ export default {
                 default:    return null;
             }
         },
-        parse(dv, type) {
+        parse(packet, dv, type) {
             let ret = {};
             switch (type) {
                 case 32: {
@@ -50,7 +53,11 @@ export default {
                     ret.warpTableRowId = dv.getUint32(1, true);
                 }
                 break;
-
+                case 11: {
+                    if (packet.direction == 1) {
+                        ret = Object.assign(ret, ChatHelper.parseServerToClient(dv));
+                    }
+                }
             }
 
             return ret;
@@ -136,8 +143,8 @@ export default {
 
     tr:hover,
     tr.active:hover {
-        background: fade(@dv-c-foreground, 30%);
-        color: @dv-c-foreground;
+        background: fade(@dv-c-background, 10%);
+        // color: white;
     }
 }
 

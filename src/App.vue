@@ -19,6 +19,12 @@
           <input type="checkbox" id="autoscroll" v-model="autoScroll" />
           Autoscroll
         </label>
+        &nbsp;&nbsp;|&nbsp;&nbsp;
+        <label for="filter">
+          Filter
+          <input type="text" id="filter" v-model="filter" />
+        </label>
+        
       </div>
       <div class="packet-list" ref="list">
         <div v-for="p in packets" :key="p.id" v-if="showC2S && (p.direction == 0) || showS2C && (p.direction == 1)">
@@ -61,6 +67,7 @@ export default {
       showS2C: true,
       c2sFilterId: 0,
       autoScroll: true,
+      filter: "",
     }
   },
   created() {
@@ -85,6 +92,7 @@ export default {
       let direction = dv.getUint8(0);
       let size = dv.getUint32(1, true);
       let data = d.slice(5 + (direction == 0 ? 2 : 5));
+      let datav = new DataView(data);
       let now = new Date();
       let packet = {
         timestamp: now,
@@ -92,23 +100,55 @@ export default {
         direction: direction,
         size: size,
         data: data,
+        datav: datav,
       };
 
       this.newPacket(packet);
     },
     newPacket(packet) {
+      if (!this.shouldAdd(packet)) { 
+        return;
+      }
+
       this.packets.push(packet);
       if (this.autoScroll) {
-        var bottom = this.$refs.bottom;
-        var list = this.$refs.list;
-        // list.scrollTop = list.scrollHeight;
-        setTimeout(() => {
-          bottom.scrollIntoView();
-        }, 100);
+        let bottom = this.$refs.bottom;
+        if (bottom) {
+          let list = this.$refs.list;
+          // list.scrollTop = list.scrollHeight;
+          setTimeout(() => {
+            bottom.scrollIntoView();
+          }, 100);
+        }
       }
     },
     clear() {
       this.packets = [];
+    },
+    shouldAdd(packet) {
+      if (this.filter && this.filter.trim().length > 0) {
+        let v = this.filter;
+        let not = false;
+        if (v.startsWith("!")) {
+          not = true;
+          v = v.substring(1);
+        }
+
+        let val = Number(v);
+        if (isNaN(val)) {
+          return true;
+        }
+
+        let packetType = packet.datav.getUint8(0);
+        let eq = packetType == val;
+        if (not) {
+          return !eq;
+        }
+
+        return eq;
+      }
+
+      return true;
     }
   }
 }
