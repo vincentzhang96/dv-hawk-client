@@ -71,6 +71,11 @@ export default {
                         ret.charmRowId = paramView.getUint32(0, true);
                         break;
                     }
+                    case 9: {
+                        ret.action = "shard item";
+                        ret.itemId = paramView.getUint32(0, true);
+                        break;
+                    }
                     case 10: {
                         ret.action = "synth rare item";
                         ret.itemId = paramView.getUint32(0, true);
